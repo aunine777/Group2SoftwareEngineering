@@ -4,15 +4,43 @@ class user:
     def __init__(self, databaseName, tableName):
         self.databaseName = databaseName
         self.tableName = tableName
+        self.loggedIn = False
+        self.userID = None
 
     def login(self):
-        pass
-    
+        username = input("Enter your email: ")
+        password = input("Enter your password: ")
+
+        if self.validate_credentials(username, password):
+            
+            self.loggedIn = True
+            self.userID = self.get(username)
+            print("Login successful.")
+          
+            return True
+        else:
+            print("Login failed.")
+            return False
+
     def logout(self):
-        pass
+        self.userID = ""
+        self.loggedIn = False
+        print("You have been logged out.")
+        return True
     
     def viewAccountInformation(self):
-        pass
+        if self.loggedIn:
+
+            account_info = self.getAccountInfoFromDatabase(self.userID)
+            if account_info:
+                print("Account Information:")
+               
+                for key, value in account_info.items():
+                    print(f"{key}: {value}")
+            else:
+                print("Account information could not be retrieved.")
+        else:
+            print("You are not logged in.")
     
     def createAccount(self):
         firstName = input("Enter your first name: ")
@@ -39,19 +67,43 @@ class user:
         pass
     
     def validateCreditials(self, email, password):
-        pass
+        connection = sqlite3.connect(self.databaseName)
+        cursor = connection.cursor()
+        # Query to check if the email and password combination exists in the database
+        cursor.execute(f"SELECT UserId, Password FROM {self.tableName} WHERE Email = ?", (email,))
+        result = cursor.fetchone()
+        connection.close()
+
+        return result and result[1] == password
 
     def getUserIdFromDatabase(self,email):
-        pass
+        
+        connection = sqlite3.connect(self.databaseName)
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT UserId FROM {self.tableName} WHERE Email = ?", (email,))
+        result = cursor.fetchone()
+        connection.close()
+        return result[0] if result else None
+
 
     def getAccountInfoFromDatabase(self,userID):
         pass
 
     def createAccountInDatabase(self, email, password, firstName, lastName, address, city, state, zipCode, paymentType):
-        pass
+        try:
+            connection = sqlite3.connect(self.databaseName)
+            cursor = connection.cursor()
+            # SQL query to insert the new account data
+            cursor.execute(f"INSERT INTO {self.tableName} (Email, Password, FirstName, LastName, Address, City, State, Zip, Payment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                           (email, password, firstName, lastName, address, city, state, zipCode, paymentType))
+            connection.commit()
+            connection.close()
+            return True
+        except sqlite3.IntegrityError:
+            return False
 
     def setDatabaseName(self, databaseName):
-        pass
+        self.databaseName = databaseName
 
     def setTableName(self, tableName):
-        pass
+         self.tableName = tableName
