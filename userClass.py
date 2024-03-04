@@ -60,8 +60,19 @@ class user:
             print("Account creation failed.")
     
 
-    def updateProfile(self, email, password):
-        pass   
+    def updateProfile(self,email,password,firstName, lastName,address, city, state, zipCode, paymentType):
+        newEmail = input("Enter a new email: ") 
+        newPassword = input("Enter a new password: ")
+        self.email = newEmail
+        self.password = newPassword
+
+        if self.createAccountInDatabase(email, password, firstName, lastName,address, city, state, zipCode, paymentType):
+            print("Account updated successfully.")
+        else:
+            print("Account updated failed")
+        
+
+
     
   
     def validateCreditials(self, email, password):
