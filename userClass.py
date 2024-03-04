@@ -63,9 +63,7 @@ class user:
     def updateProfile(self, email, password):
         pass   
     
-    def viewOrderHistory(self):
-        pass
-    
+  
     def validateCreditials(self, email, password):
         connection = sqlite3.connect(self.databaseName)
         cursor = connection.cursor()
