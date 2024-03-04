@@ -85,7 +85,14 @@ class user:
 
 
     def getAccountInfoFromDatabase(self,userID):
-        pass
+        connection = sqlite3.connect(self.databaseName)
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT * FROM {self.tableName} WHERE UserId = ?", (userID,))
+        columns = [column[0] for column in cursor.description]
+        account_info = cursor.fetchone()
+        connection.close()
+        # Return a dictionary of the account info if found, else None
+        return dict(zip(columns, account_info)) if account_info else None
 
     def createAccountInDatabase(self, email, password, firstName, lastName, address, city, state, zipCode, paymentType):
         try:
