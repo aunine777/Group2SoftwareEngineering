@@ -60,17 +60,47 @@ class user:
             print("Account creation failed.")
     
 
-    def updateProfile(self,email,password,firstName, lastName,address, city, state, zipCode, paymentType):
-        newEmail = input("Enter a new email: ") 
-        newPassword = input("Enter a new password: ")
-        self.email = newEmail
-        self.password = newPassword
-
-        if self.createAccountInDatabase(email, password, firstName, lastName,address, city, state, zipCode, paymentType):
-            print("Account updated successfully.")
-        else:
-            print("Account updated failed")
+    def updateProfile(self, email, password, first_name, last_name, address, city, state, zip_code, payment_type):
+        new_email = input("Enter a new email: ") 
+        new_password = input("Enter a new password: ")
+        new_payment_type = input("Enter a new payment_type: ")
         
+        # Update instance variables
+        self.email = new_email
+        self.password = new_password
+        self.payment_type = new_payment_type
+        self.first_name = first_name
+        self.last_name = last_name
+        self.address = address
+        self.city = city
+        self.state = state
+        self.zip_code = zip_code
+
+        # Call updateProfileInDatabase with updated values
+        if self.updateProfileInDatabase(new_email, new_password, first_name, last_name, address, city, state, zip_code, new_payment_type):
+            print("Profile updated successfully.")
+        else:
+            print("Error in updating profile.")
+
+    def updateProfileInDatabase(self, email, password, first_name, last_name, address, city, state, zip_code, payment_type):
+        try:
+            # Execute SQL update statement
+            self.cursor.execute("""
+                UPDATE User 
+                SET email = ?, password = ?, first_name = ?, last_name = ?, address = ?, city = ?, state = ?, zip_code = ?, payment_type = ?
+                WHERE email = ?
+            """, (email, password, first_name, last_name, address, city, state, zip_code, payment_type, email))
+            
+            # Commit changes to the database
+            self.conn.commit()
+           
+            return True  # Return True if update was successful
+       
+        except sqlite3.Error as e:
+            print("Database error:", e)
+            return False  # Return False if update failed
+         
+   
 
 
     
