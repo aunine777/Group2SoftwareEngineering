@@ -100,10 +100,6 @@ class user:
             print("Database error:", e)
             return False  # Return False if update failed
          
-   
-
-
-    
   
     def validateCreditials(self, email, password):
         connection = sqlite3.connect(self.databaseName)
