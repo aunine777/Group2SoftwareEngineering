@@ -1,15 +1,34 @@
-<!DOCTYPE html>
 {% load static %}
+<!DOCTYPE html>
+<html lang="en">
 <html>
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StarkVegas Select</title>
-
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-
     <link rel="stylesheet" type="text/css" href="{% static 'css/main.css' %}">
+    <style>
+      body, html {
+          height: 100%;
+          margin: 0;
+      }
+      .full-bg-image::before {
+          content: '';
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          z-index: -1;
+          background: url("{% static 'images/bookstore-background.jpg' %}") no-repeat center center fixed;
+          background-size: cover;
+          -webkit-filter: blur(8px);
+          filter: blur(2px);
+      }
+  </style>
 
 
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1" />
 
     <script type="text/javascript">
       var user = '{{request.user}}'
@@ -57,35 +76,76 @@ console.log('Cart:', cart)
 </head>
 <body>
     
+    <div class="full-bg-image"></div>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <a class="navbar-brand" href="{% url 'store' %}">StarkVegas Select </a>
        
       
-          <ul class="navbar-nav mr-auto">
-            <li class="nav-item active">
-              <a class="nav-link" href="{% url 'store' %}">Store<span class="sr-only">(current)</span></a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ml-auto">
+            {% if user.is_authenticated %}
+              {% if request.user.profile.is_seller %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{% url 'seller_dashboard' %}">Seller Dashboard</a>
+                </li>
+            {% endif %}
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'search_books' %}">Search New Book</a>
             </li>
-          </ul>
-         
-          <div class="form-inline my-2 my-lg-0">
-            <a href="#"class="btn btn-warning">Login</a>
-            
-            <a href="{% url 'cart' %}">
-               <img  id="cart-icon" src="{% static 'images/6+cart.png' %}">
-           </a>
-           <p id="cart-total">{{cartItems}}</p>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'view_inventory' %}">View Inventory</a>
+              </li>
+              <li class="nav-item">
+                <!-- Use the POST method for the logout function -->
+                <form action="{% url 'logout' %}" method="post">
+                  {% csrf_token %}
+                  <input type="submit" value="Logout" class="btn btn-link nav-link" style="background:none; border:none; padding:0;">
+                </form>
+              </li>
 
-       </div>
+              <a href="{% url 'cart' %}">
+                <img  id="cart-icon" src="{% static 'images/6+cart.png' %}">
+            </a>
+            <p id="cart-total">{{cartItems}}</p>
+            {% else %}
+
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'index' %}">Homepage</a>
+            </li>
+
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'login' %}">Login</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="{% url 'register' %}">Register</a>
+              </li>
+
+              <a href="{% url 'cart' %}">
+                <img  id="cart-icon" src="{% static 'images/6+cart.png' %}">
+            </a>
+            <p id="cart-total">{{cartItems}}</p>
+              
+
+            {% endif %}
+          </ul>
         </div>
       </nav>
+</header>
 
-         <div class="container">
-                <br>
-                {% block content %}
+      <main class="container mt-4">
+        {% block content %}
+        <!-- Content unique to each page -->
+        {% endblock %}
+    </main>
 
-
-                 {% endblock content %}
-         </div>
+    <footer class="footer">
+        <div class="text-center p-0.02">
+            © 2024 StarkVegas Select. All rights reserved.
+        </div>
+    </footer>
 
 
 
