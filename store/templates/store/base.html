@@ -1,0 +1,94 @@
+
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StarkVegas Select - Your Online Bookstore</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+        }
+        .full-bg-image::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: url("{% static 'images/bookstore-background.jpg' %}") no-repeat center center fixed;
+            background-size: cover;
+            -webkit-filter: blur(8px);
+            filter: blur(2px);
+        }
+    </style>
+
+    <!-- Inside your base.html or a navigation include file -->
+</head>
+<body>
+
+    <div class="full-bg-image"></div> <!-- Full page background image -->
+
+    <div class="content-wrapper">
+        <header>
+            <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                <a class="navbar-brand" href="{% url 'index' %}">StarkVegas Select</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                  <ul class="navbar-nav ml-auto">
+                    {% if user.is_authenticated %}
+                      {% if request.user.profile.is_seller %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'add_book' %}">Add Book</a>
+                        </li>
+                    {% endif %}
+                    <li class="nav-item">
+                      <a class="nav-link" href="{% url 'search_books' %}">Search New Book</a>
+                    </li>
+                      <li class="nav-item">
+                        <a class="nav-link" href="{% url 'view_inventory' %}">View Inventory</a>
+                      </li>
+                      <li class="nav-item">
+                        <!-- Use the POST method for the logout function -->
+                        <form action="{% url 'logout' %}" method="post">
+                          {% csrf_token %}
+                          <input type="submit" value="Logout" class="btn btn-link nav-link" style="background:none; border:none; padding:0;">
+                        </form>
+                      </li>   {% else %}
+                        <li class="nav-item">
+                          <a class="nav-link" href="{% url 'login' %}">Login</a>
+                        </li>
+                        <li class="nav-item">
+                          <a class="nav-link" href="{% url 'register' %}">Register</a>
+                        </li>
+                      {% endif %}
+                    </ul>
+                  </div>
+                </nav>
+        </header>
+
+        <main class="container mt-4">
+            {% block content %}
+            <!-- Content unique to each page -->
+            {% endblock %}
+        </main>
+
+        <footer class="footer">
+            <div class="text-center p-0.02">
+                © 2024 StarkVegas Select. All rights reserved.
+            </div>
+        </footer>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
