@@ -272,5 +272,15 @@ def processOrder(request):
                     city=data['shipping']['city'],
                     state=data['shipping']['state'],
                     zipcode=data['shipping']['zipcode'],
+                    credit_card_number=data['shipping']['credit_card_number'],
+                    credit_card_expiration_date=data['shipping']['credit_card_expiration_date'],
+                    CVV_number=data['shipping']['CVV_number'],
+
                )
+     
      return JsonResponse('Payment complete', safe=False)
+
+def processed_order(request):
+    return render(request, 'store/processed_order.html')
+
+
