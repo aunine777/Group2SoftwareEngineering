@@ -34,9 +34,7 @@
 						<div class="form-field">
 							<input class="form-control" type="text" name="zipcode" placeholder="Zip code..">
 						</div>
-						<div class="form-field">
-							<input class="form-control" type="text" name="country" placeholder="Zip code..">
-						</div>
+			
 					</div>
 
 					<hr>
@@ -47,7 +45,25 @@
 			<br>
 			<div class="box-element hidden" id="payment-info">
 				<div id="paypal-button-container"></div>
-				<small>Payment Options</small>
+				
+				
+				<div class="form-field">
+					<input class="form-control" type="text" name="credit_card_number" placeholder="Credit card number..">
+				</div>
+
+				<div class="form-field">
+					<input class="form-control" type="text" name="credit_card_expiration_date" placeholder="Credit card expiration date..">
+				</div>
+
+				<div class="form-field">
+					<input class="form-control" type="text" name="CVV_number" placeholder="CVV Number..">
+				</div>
+
+				<a  class="btn btn-outline-dark" href="{% url 'processed_order' %}">&#x2190; Place Your Order </a>
+
+
+				
+
 				<!--button id="make-payment">Make Payment</button-->
 			</div>
 			
@@ -55,7 +71,7 @@
 
 		<div class="col-lg-6">
 			<div class="box-element">
-				<a  class="btn btn-outline-dark" href="{% url 'cart' %}">&#x2190; Back to Cart</a>
+				<a  class="btn btn-outline-dark" href="{% url 'cart' %}">&#x2190; Back to Cart </a>
 				<hr>
 				<h3>Order Summary</h3>
 				<hr>
@@ -73,8 +89,13 @@
 			</div>
 		</div>
 	</div>
+
+	
+	<!--
 	<script src="https://www.paypal.com/sdk/js?client-id=test&currency=USD"></script>
 	<script>
+
+		
 		
         // Render the PayPal button into #paypal-button-container
         paypal.Buttons({
@@ -134,9 +155,8 @@
 
         }).render('#paypal-button-container');
     </script>
-
-	<!--If the code block from PayPal above doesnt work for some reason we will take what was in the video-->
-
+	
+-->
 
 	<script type="text/javascript">
 		var shipping = '{{order.shipping}}'
