@@ -28,6 +28,8 @@ urlpatterns = [
     path('inventory/', views.view_inventory, name='view_inventory'),
     path('add_to_cart/<int:product_id>/', views.add_to_cart, name='add_to_cart'),
     path('seller_dashboard/', views.seller_dashboard, name='seller_dashboard'),
+    path('processed_order/', views.processed_order, name='processed_order'),
+
     # path('get-content/<str:content_id>/', get_content, name='get-content'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
