@@ -1,21 +1,93 @@
 {% extends 'store/main.html' %}
 {% load static %}
 {% block content %}
-     <div class="row">
-          {% for product in products %}
-          <div class="col-lg-4">
-               <img class="thumbnail" src="{{product.imageURL}}">
-               <div class="box-element product">
+    <style>
+        /* Custom styles for the store page */
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .col-lg-4 {
+            flex: 0 0 calc(33.3333% - 20px);
+            margin-bottom: 20px;
+        }
+
+        .thumbnail {
+            width: 100%;
+            height: auto;
+        }
+
+        .box-element {
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .box-element:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .product h6 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+
+        .product hr {
+            margin: 10px 0;
+            border: none;
+            border-top: 1px solid #ddd;
+        }
+
+        .product .btn {
+            margin-top: 10px;
+        }
+
+        .product .btn-outline-secondary {
+            color: #333;
+            border-color: #333;
+        }
+
+        .product .btn-outline-secondary:hover {
+            background-color: #333;
+            color: #fff;
+        }
+
+        .product .btn-outline-success {
+            color: #28a745;
+            border-color: #28a745;
+        }
+
+        .product .btn-outline-success:hover {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .product h4 {
+            margin-top: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+
+    <div class="row">
+        {% for product in products %}
+            <div class="col-lg-4">
+                <img class="thumbnail" src="{{product.imageURL}}">
+                <div class="box-element product">
                     <h6><strong>{{product.name}}</strong></h6>
-		          <hr>
-
+                    <hr>
                     <button data-product="{{product.id}}" data-action="add" class="btn btn-outline-secondary add-btn update-cart">Add to Cart</button>
-		          <a class="btn btn-outline-success" href="#">View</a>
-		          <h4 style="display: inline-block; float: right">${{product.price|floatformat:2}}</h4>
-
-               </div>
-          </div>  
-          {% endfor %}
-     </div>
+                    <a class="btn btn-outline-success" href="#">View</a>
+                    <h4>${{product.price|floatformat:2}}</h4>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 {% endblock content %}
-

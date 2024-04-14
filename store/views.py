@@ -1,4 +1,5 @@
 from itertools import product
+from django.db.models import Count, Sum
 from django.contrib.auth import login
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
@@ -25,6 +26,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.db.models import F
 from django.views.decorators.http import require_POST
 import json
+from django.contrib import messages
 
 
 
@@ -63,45 +65,60 @@ def cart(request):
 
 
 
+from django.contrib.auth.decorators import login_required
+from django.db import transaction
+
+@login_required
 def checkout(request):
-     data = cartData(request)
-     cartItems = data['cartItems']
-     order = data['order']
-     items = data['items']
-     
-     context = {'items': items, 'order': order, 'cartItems': cartItems} 
-     return render(request, 'store/checkout.html', context)
+    data = cartData(request)
+    cartItems = data['cartItems']
+    order = data['order']
+    items = data['items']
+
+    if request.method == 'POST':
+        if not items:
+            messages.error(request, "There are no items in your cart.")
+            return redirect('cart')
+
+        # Assuming the payment is processed successfully:
+        order.complete = True
+        order.save()
+
+        # Store the last completed order ID and items in the session
+        request.session['last_order_id'] = order.id
+        request.session['items'] = [item.id for item in items]  # Store a list of item IDs
+
+        return redirect('order_success')
+    else:
+        context = {'items': items, 'order': order, 'cartItems': cartItems}
+        return render(request, 'store/checkout.html', context)
 
 
 @require_POST
 @csrf_exempt
 def updateItem(request):
     data = json.loads(request.body)
-    productId = data['productId']
-    action = data['action']
+    productId = data.get('productId')
+    action = data.get('action')
 
     customer, created = Customer.objects.get_or_create(user=request.user)
-    orders = Order.objects.filter(customer=customer, complete=False)
+    order, created = Order.objects.get_or_create(customer=customer, complete=False)
 
-    if orders.exists():
-        order = orders.first()
-    else:
-        order = Order.objects.create(customer=customer, complete=False)
-
-    product = Product.objects.get(id=productId)
+    product = get_object_or_404(Product, id=productId)
     orderItem, created = OrderItem.objects.get_or_create(order=order, product=product)
 
     if action == 'add':
-        orderItem.quantity = (orderItem.quantity + 1)
+        orderItem.quantity += 1
     elif action == 'remove':
-        orderItem.quantity = (orderItem.quantity - 1)
+        orderItem.quantity -= 1
 
     orderItem.save()
 
     if orderItem.quantity <= 0:
         orderItem.delete()
 
-    return JsonResponse('Item was added', safe=False)
+    return JsonResponse("Item was added", safe=False)
+
 
 class CustomLogoutView(LogoutView):
     @method_decorator(csrf_exempt)
@@ -132,7 +149,7 @@ def register(request):
             profile.save()
 
             login(request, user)
-            return redirect('search_books')  # Redirect to the home page or dashboard
+            return redirect('login')  # Redirect to the home page or dashboard
 
     else:
         form = NewUserForm()
@@ -180,62 +197,114 @@ def view_inventory(request):
     }
     return render(request, 'store/inventory.html', context)
 
+import logging
+logger = logging.getLogger(__name__)
+
 def add_to_cart(request, product_id):
-    print("Before:", request.session.get('cart', {}))
+    logger.debug("Session cart before update: %s", request.session.get('cart', {}))
     product = get_object_or_404(Product, id=product_id)
     cart = request.session.get('cart', {})
 
-    # Convert product_id to string for consistency
     product_key = str(product_id)
-
-    # Increment the product quantity in cart or add it if it doesn't exist
     if product_key in cart:
         cart[product_key] += 1
     else:
         cart[product_key] = 1
 
-    # Save the cart in the session
     request.session['cart'] = cart
-    print("After:", request.session.get('cart', {}))
+    request.session.modified = True  # Ensure the session is saved after modification
+    logger.debug("Session cart after update: %s", request.session.get('cart', {}))
 
-    # Redirect back to the page where the 'Add to Cart' button was clicked
     referer_url = request.META.get('HTTP_REFERER')
     if referer_url:
         return HttpResponseRedirect(referer_url)
     else:
-        # If the HTTP_REFERER is not set, redirect to a default page (e.g., 'search_books')
         return HttpResponseRedirect(reverse('search_books'))
 
+
 def seller_dashboard(request):
-    if request.user.is_authenticated and request.user.profile.is_seller:
-        if request.method == 'POST':
-            add_book_form = AddBookForm(request.POST, request.FILES)
-            if add_book_form.is_valid():
-                new_book = add_book_form.save(commit=False)
-                new_book.seller = request.user.profile
-                new_book.save()
-                return redirect('seller_dashboard')  # Redirect to refresh the page and show the new book
-        else:
-            add_book_form = AddBookForm()
-
-        seller_books = Product.objects.filter(seller=request.user.profile)
-
-        # Get the number of purchases for each book
-        book_purchases = {book: OrderItem.objects.filter(product=book).count() for book in seller_books}
-
-        # Total listings by the seller
-        total_listings = seller_books.count()
-
-        context = {
-            'add_book_form': add_book_form,
-            'seller_books': seller_books,
-            'book_purchases': book_purchases,
-            'total_listings': total_listings,
-        }
-        return render(request, 'store/seller_dashboard.html', context)
-    else:
+    if not (request.user.is_authenticated and request.user.profile.is_seller):
         return redirect('login')
 
+    if request.method == 'POST':
+        add_book_form = AddBookForm(request.POST, request.FILES)
+        if add_book_form.is_valid():
+            new_book = add_book_form.save(commit=False)
+            new_book.seller = request.user.profile
+            new_book.save()
+            return redirect('seller_dashboard')
+    else:
+        add_book_form = AddBookForm()
+
+    # Fetching products and their sales data
+    seller_books = Product.objects.filter(seller=request.user.profile).prefetch_related('orderitems')
+    book_sales_data = seller_books.annotate(
+        total_sales=Sum('orderitems__quantity'),
+        total_revenue=Sum(F('orderitems__quantity') * F('orderitems__product__price')),
+        order_count=Count('orderitems')
+    )
+
+    # Fetching unread notifications
+    notifications = Notification.objects.filter(recipient=request.user, read=False)
+
+    # Total listings by the seller
+    total_listings = seller_books.count()
+
+    context = {
+        'add_book_form': add_book_form,
+        'book_sales_data': book_sales_data,
+        'total_listings': total_listings,
+        'notifications': notifications,
+    }
+    return render(request, 'store/seller_dashboard.html', context)
+
+def remove_listing(request, book_id):
+    if not request.user.is_authenticated or not request.user.profile.is_seller:
+        messages.error(request, "You need to be logged in as a seller to perform this action.")
+        return redirect('login')
+    
+    book = get_object_or_404(Product, id=book_id, seller=request.user.profile)
+    book.delete()
+    messages.success(request, "Product removed successfully.")
+    return redirect('seller_dashboard')
+
+
+def mark_notification_read(request, notification_id):
+    notification = Notification.objects.get(id=notification_id, recipient=request.user)
+    notification.read = True
+    notification.save()
+    return redirect('seller_dashboard')
+
+def clear_notification(request, notification_id):
+    if request.method == 'POST':
+        notification = get_object_or_404(Notification, id=notification_id, recipient=request.user)
+        notification.read = True  
+        notification.save()
+        
+        # Return a success response
+        return JsonResponse({'status': 'success', 'message': 'Notification cleared.'})
+    else:
+        # Handle non-POST requests here, if needed
+        return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})
+
+def order_success(request):
+    order_id = request.session.get('last_order_id')
+    if not order_id:
+        messages.error(request, "No recent order found.")
+        return redirect('store')
+    
+    # Use the correct related name for the reverse relation to access OrderItem instances
+    order = get_object_or_404(Order, id=order_id)
+    
+    # Get the related items using the correct related name
+    items = order.order_items.all() if order else []
+    
+    # Clear the session variable after retrieving the order
+    if 'last_order_id' in request.session:
+        del request.session['last_order_id']
+    
+    context = {'order': order, 'items': items}
+    return render(request, 'store/order_success.html', context)
 
 
 from django.views.decorators.csrf import csrf_exempt
@@ -272,15 +341,5 @@ def processOrder(request):
                     city=data['shipping']['city'],
                     state=data['shipping']['state'],
                     zipcode=data['shipping']['zipcode'],
-                    credit_card_number=data['shipping']['credit_card_number'],
-                    credit_card_expiration_date=data['shipping']['credit_card_expiration_date'],
-                    CVV_number=data['shipping']['CVV_number'],
-
                )
-     
      return JsonResponse('Payment complete', safe=False)
-
-def processed_order(request):
-    return render(request, 'store/processed_order.html')
-
-

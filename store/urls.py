@@ -10,7 +10,7 @@ from django.conf.urls.static import static
 urlpatterns = [
 	path('', views.store, name="store"),
 	path('cart/', views.cart, name="cart"),
-	path('checkout/', views.checkout, name="checkout"),
+	# path('checkout/process/', views.checkout_process, name='process_checkout'),
 	path('update_item/', views.updateItem, name="update_item"),
     path('process_order/', views.processOrder, name="process_order"),	
     path('index/', views.index, name='index'),
@@ -28,7 +28,10 @@ urlpatterns = [
     path('inventory/', views.view_inventory, name='view_inventory'),
     path('add_to_cart/<int:product_id>/', views.add_to_cart, name='add_to_cart'),
     path('seller_dashboard/', views.seller_dashboard, name='seller_dashboard'),
-    path('processed_order/', views.processed_order, name='processed_order'),
+    path('remove_listing/<int:book_id>/', views.remove_listing, name='remove_listing'),
+    path('notifications/read/<int:notification_id>/', views.mark_notification_read, name='mark_notification_read'),
+    path('order-success/', views.order_success, name='order_success'),
+    path('clear_notification/<int:notification_id>/', views.clear_notification, name='clear_notification'),
 
     # path('get-content/<str:content_id>/', get_content, name='get-content'),
 
