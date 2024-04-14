@@ -27,6 +27,7 @@ from django.db.models import F
 from django.views.decorators.http import require_POST
 import json
 from django.contrib import messages
+from django.db.models import DecimalField
 
 
 
@@ -97,27 +98,39 @@ def checkout(request):
 @require_POST
 @csrf_exempt
 def updateItem(request):
-    data = json.loads(request.body)
-    productId = data.get('productId')
-    action = data.get('action')
+    try:
+        data = json.loads(request.body)
+        productId = data.get('productId')
+        action = data.get('action')
 
-    customer, created = Customer.objects.get_or_create(user=request.user)
-    order, created = Order.objects.get_or_create(customer=customer, complete=False)
+        if productId is None or action not in ['add', 'remove']:
+            return JsonResponse({'error': 'Missing product ID or invalid action'}, status=400)
 
-    product = get_object_or_404(Product, id=productId)
-    orderItem, created = OrderItem.objects.get_or_create(order=order, product=product)
+        product = get_object_or_404(Product, id=productId)
 
-    if action == 'add':
-        orderItem.quantity += 1
-    elif action == 'remove':
-        orderItem.quantity -= 1
+        customer, _ = Customer.objects.get_or_create(user=request.user)
+        order, _ = Order.objects.get_or_create(customer=customer, complete=False)
 
-    orderItem.save()
+        orderItem, created = OrderItem.objects.get_or_create(order=order, product=product)
 
-    if orderItem.quantity <= 0:
-        orderItem.delete()
+        with transaction.atomic():
+            if action == 'add':
+                orderItem.quantity += 1
+            elif action == 'remove':
+                orderItem.quantity = max(orderItem.quantity - 1, 0)  # Prevent negative quantities
 
-    return JsonResponse("Item was added", safe=False)
+            orderItem.save()
+
+            if orderItem.quantity == 0:
+                orderItem.delete()
+
+        return JsonResponse({'message': 'Item was updated', 'quantity': orderItem.quantity if not created else 0}, safe=False)
+
+    except Product.DoesNotExist:
+        return JsonResponse({'error': 'Product not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
 
 
 class CustomLogoutView(LogoutView):
@@ -236,18 +249,14 @@ def seller_dashboard(request):
     else:
         add_book_form = AddBookForm()
 
-    # Fetching products and their sales data
-    seller_books = Product.objects.filter(seller=request.user.profile).prefetch_related('orderitems')
+    seller_books = Product.objects.filter(seller=request.user.profile).prefetch_related('order_items')
     book_sales_data = seller_books.annotate(
-        total_sales=Sum('orderitems__quantity'),
-        total_revenue=Sum(F('orderitems__quantity') * F('orderitems__product__price')),
-        order_count=Count('orderitems')
+        total_sales=Sum('order_items__quantity'),
+        total_revenue=Sum(F('order_items__quantity') * F('price'), output_field=DecimalField()),
+        order_count=Count('order_items')
     )
 
-    # Fetching unread notifications
     notifications = Notification.objects.filter(recipient=request.user, read=False)
-
-    # Total listings by the seller
     total_listings = seller_books.count()
 
     context = {
@@ -256,6 +265,7 @@ def seller_dashboard(request):
         'total_listings': total_listings,
         'notifications': notifications,
     }
+
     return render(request, 'store/seller_dashboard.html', context)
 
 def remove_listing(request, book_id):
