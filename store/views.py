@@ -79,24 +79,30 @@ def checkout(request):
 
     if request.user.is_authenticated:
         customer = Customer.objects.get(user=request.user)
-        # Try to retrieve the default shipping address
         address = ShippingAddress.objects.filter(customer=customer, default=True).first()
     else:
         customer, address = None, None
 
     if request.method == 'POST':
         address_data = request.POST
-        ShippingAddress.objects.update_or_create(
-            customer=customer,
-            defaults={
-                'address': address_data['address'],
-                'city': address_data['city'],
-                'state': address_data['state'],
-                'zipcode': address_data['zipcode'],
-                'default': address_data.get('set_default', False)
-            },
-        )
-        return redirect('checkout_success')
+        if 'address' in address_data and 'city' in address_data and 'state' in address_data and 'zipcode' in address_data:
+            ShippingAddress.objects.update_or_create(
+                customer=customer,
+                defaults={
+                    'address': address_data['address'],
+                    'city': address_data['city'],
+                    'state': address_data['state'],
+                    'zipcode': address_data['zipcode'],
+                    'default': address_data.get('set_default') == 'on'
+                },
+            )
+            order.complete = True
+            order.save()
+            request.session['last_order_id'] = order.id 
+            messages.success(request, "Your order has been completed successfully.")
+            return HttpResponseRedirect(reverse('order_success'))
+        else:
+            messages.error(request, "Please fill in all required fields.")
 
     context = {
         'items': items,
