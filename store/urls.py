@@ -32,7 +32,8 @@ urlpatterns = [
     path('notifications/read/<int:notification_id>/', views.mark_notification_read, name='mark_notification_read'),
     path('order-success/', views.order_success, name='order_success'),
     path('clear_notification/<int:notification_id>/', views.clear_notification, name='clear_notification'),
-
+    path('book_detail/<int:id>/', views.book_detail, name='book_detail'),
+    path('book/<int:book_id>/rate/', views.submit_rating, name='submit_rating'),
     # path('get-content/<str:content_id>/', get_content, name='get-content'),
 
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,0 +1,89 @@
+{% extends 'store/main.html' %}
+
+{% block content %}
+<div class="container mt-4">
+  <style>
+    .book-detail-container {
+      background-color: rgba(255, 255, 255, 0.9); 
+      padding: 2rem; 
+      border-radius: 0.5rem;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+      margin-bottom: 2rem;
+    }
+
+    .book-cover img {
+      max-width: 100%; 
+      height: auto; 
+      display: block; 
+      margin-bottom: 2rem; 
+    }
+
+    .book-info {
+      margin-top: 1rem;
+    }
+
+    .book-title, .book-author, .book-pages, .book-description, .book-rating {
+      margin-bottom: 1rem;
+    }
+
+    .book-description {
+      font-size: 1rem; 
+      line-height: 1.6; 
+    }
+
+    .rating-form {
+      margin-top: 1rem;
+    }
+
+    @media (min-width: 768px) {
+      .book-detail-container {
+        display: flex;
+        align-items: flex-start;
+      }
+
+      .book-cover {
+        flex: 1 1 auto; 
+      }
+
+      .book-info {
+        flex: 2 1 auto;
+        padding-left: 2rem;
+      }
+    }
+  </style>
+
+  <div class="book-detail-container">
+    <div class="book-cover">
+      {% if book.image %}
+      <img src="{{ book.image.url }}" alt="{{ book.title }}" class="img-fluid">
+      {% else %}
+      <div class="text-center"><p>No image available.</p></div>
+      {% endif %}
+    </div>
+    
+    <div class="book-info">
+      <h1 class="book-title">{{ book.title }}</h1>
+      <p class="book-author"><strong>Author:</strong> {{ book.author }}</p>
+      <p class="book-pages"><strong>Pages:</strong> {{ book.num_pages }}</p>
+      <div class="book-description">{{ book.description }}</div>
+      <div class="book-rating">
+        <h3>Rating: {{ book.average_rating|default:"No ratings yet" }} ({{ book.ratings_count }} reviews)</h3>
+      </div>
+
+      <!-- Rating form -->
+      <form method="post" action="{% url 'submit_rating' book_id=book.id %}">
+        {% csrf_token %}
+        <label for="rating">Rate this book:</label>
+        <select name="rating" id="rating">
+          <option value="1">1 - Poor</option>
+          <option value="2">2 - Fair</option>
+          <option value="3">3 - Good</option>
+          <option value="4">4 - Very Good</option>
+          <option value="5">5 - Excellent</option>
+        </select>
+        <input type="submit" value="Submit Rating">
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

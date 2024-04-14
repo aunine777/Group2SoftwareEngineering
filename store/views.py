@@ -28,6 +28,7 @@ from django.views.decorators.http import require_POST
 import json
 from django.contrib import messages
 from django.db.models import DecimalField
+from .forms import CheckoutForm
 
 
 
@@ -76,23 +77,34 @@ def checkout(request):
     order = data['order']
     items = data['items']
 
-    if request.method == 'POST':
-        if not items:
-            messages.error(request, "There are no items in your cart.")
-            return redirect('cart')
-
-        # Assuming the payment is processed successfully:
-        order.complete = True
-        order.save()
-
-        # Store the last completed order ID and items in the session
-        request.session['last_order_id'] = order.id
-        request.session['items'] = [item.id for item in items]  # Store a list of item IDs
-
-        return redirect('order_success')
+    if request.user.is_authenticated:
+        customer = Customer.objects.get(user=request.user)
+        # Try to retrieve the default shipping address
+        address = ShippingAddress.objects.filter(customer=customer, default=True).first()
     else:
-        context = {'items': items, 'order': order, 'cartItems': cartItems}
-        return render(request, 'store/checkout.html', context)
+        customer, address = None, None
+
+    if request.method == 'POST':
+        address_data = request.POST
+        ShippingAddress.objects.update_or_create(
+            customer=customer,
+            defaults={
+                'address': address_data['address'],
+                'city': address_data['city'],
+                'state': address_data['state'],
+                'zipcode': address_data['zipcode'],
+                'default': address_data.get('set_default', False)
+            },
+        )
+        return redirect('checkout_success')
+
+    context = {
+        'items': items,
+        'order': order,
+        'cartItems': cartItems,
+        'address': address  
+    }
+    return render(request, 'store/checkout.html', context)
 
 
 @require_POST
@@ -102,8 +114,10 @@ def updateItem(request):
         data = json.loads(request.body)
         productId = data.get('productId')
         action = data.get('action')
+        logger.debug(f"Action: {action}, Product ID: {productId}")
 
         if productId is None or action not in ['add', 'remove']:
+            logger.error("Missing product ID or invalid action")
             return JsonResponse({'error': 'Missing product ID or invalid action'}, status=400)
 
         product = get_object_or_404(Product, id=productId)
@@ -116,19 +130,24 @@ def updateItem(request):
         with transaction.atomic():
             if action == 'add':
                 orderItem.quantity += 1
+                logger.debug(f"Added: Current quantity of {product.name} is {orderItem.quantity}")
             elif action == 'remove':
-                orderItem.quantity = max(orderItem.quantity - 1, 0)  # Prevent negative quantities
+                orderItem.quantity = max(orderItem.quantity - 1, 0)
+                logger.debug(f"Removed: Current quantity of {product.name} is {orderItem.quantity}")
 
             orderItem.save()
 
             if orderItem.quantity == 0:
                 orderItem.delete()
+                logger.debug(f"Deleted {product.name} from cart because quantity reached 0")
 
-        return JsonResponse({'message': 'Item was updated', 'quantity': orderItem.quantity if not created else 0}, safe=False)
+        return JsonResponse({'message': 'Item was updated', 'quantity': orderItem.quantity}, safe=False)
 
     except Product.DoesNotExist:
+        logger.error("Product not found")
         return JsonResponse({'error': 'Product not found'}, status=404)
     except Exception as e:
+        logger.error(f"Error updating item: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
 
 
@@ -194,11 +213,11 @@ def add_book(request):
                 product = form.save(commit=False)
                 product.seller = request.user.profile
                 product.save()
-                print(f"Book added with id: {product.id}")  # This will print to the console
+                print(f"Book added with id: {product.id}")  
                 return redirect('seller_dashboard')  # Redirect to the seller dashboard or inventory view
         else:
             form = AddBookForm()
-        return render(request, 'store/add_book.html', {'form': form})  # Pass the form to the context here
+        return render(request, 'store/add_book.html', {'form': form}) 
     else:
         # Redirect non-sellers to a different page or show an error message
         return redirect('search_books')
@@ -249,11 +268,9 @@ def seller_dashboard(request):
     else:
         add_book_form = AddBookForm()
 
-    # Ensure you are using 'order_items' for the related name as defined in your Product model
     seller_books = Product.objects.filter(seller=request.user.profile).prefetch_related('order_items')
     book_sales_data = seller_books.annotate(
         total_sales=Sum('order_items__quantity'),
-        # Use 'price' of the Product model, assuming it has a field 'price'
         total_revenue=Sum(F('order_items__quantity') * F('price'), output_field=DecimalField()),
         order_count=Count('order_items')
     )
@@ -318,8 +335,22 @@ def order_success(request):
     context = {'order': order, 'items': items}
     return render(request, 'store/order_success.html', context)
 
+def book_detail(request, id):
+    product = get_object_or_404(Product, id=id)
+    return render(request, 'store/book_detail.html', {'book': product})
 
-from django.views.decorators.csrf import csrf_exempt
+def submit_rating(request, book_id):
+    if request.method == 'POST':
+        rating = int(request.POST.get('rating'))
+        book = get_object_or_404(Product, id=book_id)
+        total_rating = book.average_rating * book.ratings_count
+        total_rating += rating
+        book.ratings_count += 1
+        book.average_rating = total_rating / book.ratings_count
+        book.save()
+        return redirect('book_detail', id=book_id)
+    else:
+        return redirect('error')
 
 @csrf_exempt
 def processOrder(request):

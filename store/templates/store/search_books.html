@@ -88,7 +88,7 @@
         }
 
         .product .btn:hover {
-            background-color: #0056b3;
+            background-color: #98a6b6;
         }
 
         .no-results {
@@ -114,7 +114,10 @@
                         <img src="{{ product.imageURL }}" alt="{{ product.name }}">
                         <h3>{{ product.name }}</h3>
                         <p>${{ product.price }}</p>
-                        <a href="{% url 'add_to_cart' product.id %}" class="btn btn-primary">Add to Cart</a>
+                        <div class="mt-auto">
+                            <button data-product="{{ product.id }}" data-action="add" class="btn btn-primary add-btn update-cart">Add to Cart</button>
+                            <a href="{% url 'book_detail' product.id %}" class="btn btn-info">View</a>
+                        </div>
                     </div>
                 {% endfor %}
             </div>

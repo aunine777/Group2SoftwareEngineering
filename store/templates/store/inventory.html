@@ -126,25 +126,35 @@
 </style>
 
 
-<div class="row">
-    {% for product in products %}
-        <div class="col-lg-4">
-            <div class="box-element product">
-                <img class="thumbnail" src="{{ product.imageURL }}" alt="{{ product.name }}">
-                <h6 data-tooltip="{{ product.description }}"><strong>{{ product.name }}</strong></h6>
-                <hr>
-                <h4>${{ product.price|floatformat:2 }}</h4>
-                <button data-product="{{ product.id }}" data-action="add" class="btn btn-outline-secondary add-btn update-cart">Add to Cart</button>
-                <!-- Placeholder for future detail view implementation -->
-                <a class="btn btn-outline-success" href="#;" onclick="alert('Feature coming soon!');">View</a>
+<div class="container">
+    <h1 class="my-4">Inventory</h1>
+    <div class="row">
+        {% for product in products %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <a href="{% url 'book_detail' product.id %}">
+                        <img class="card-img-top" src="{{ product.imageURL }}" alt="{{ product.name }}">
+                    </a>
+                    <div class="card-body d-flex flex-column">
+                        <h4 class="card-title">
+                            <a href="{% url 'book_detail' product.id %}">{{ product.name }}</a>
+                        </h4>
+                        <h5>${{ product.price }}</h5>
+                        <div class="mt-auto">
+                            <button data-product="{{ product.id }}" data-action="add" class="btn btn-primary add-btn update-cart">Add to Cart</button>
+                            <a href="{% url 'book_detail' product.id %}" class="btn btn-info">View</a>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    {% empty %}
-        <div class="col-12">
-            <p>No books found in inventory.</p>
-        </div>
-    {% endfor %}
+        {% empty %}
+            <div class="col-12">
+                <p class="text-center">No books found in inventory.</p>
+            </div>
+        {% endfor %}
+    </div>
 </div>
+
 
 <!-- Inline JavaScript -->
 <script type="text/javascript">

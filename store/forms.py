@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from .models import Product
+from .models import ShippingAddress
 # from .models import Book
 
 
@@ -29,6 +30,10 @@ class AddBookForm(forms.ModelForm):
         model = Product
         fields = ['name', 'price', 'digital', 'image']
 
+class CheckoutForm(forms.ModelForm):
+    class Meta:
+        model = ShippingAddress
+        fields = ['address', 'city', 'state', 'zipcode']
 
 # class BookForm(forms.ModelForm):
 #     class Meta:
