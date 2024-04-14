@@ -249,9 +249,11 @@ def seller_dashboard(request):
     else:
         add_book_form = AddBookForm()
 
+    # Ensure you are using 'order_items' for the related name as defined in your Product model
     seller_books = Product.objects.filter(seller=request.user.profile).prefetch_related('order_items')
     book_sales_data = seller_books.annotate(
         total_sales=Sum('order_items__quantity'),
+        # Use 'price' of the Product model, assuming it has a field 'price'
         total_revenue=Sum(F('order_items__quantity') * F('price'), output_field=DecimalField()),
         order_count=Count('order_items')
     )
