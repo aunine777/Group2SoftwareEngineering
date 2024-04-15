@@ -1,0 +1,84 @@
+{% extends 'store/main.html' %}
+{% block content %}
+<style>
+    /* Custom styles for the seller dashboard */
+    .dashboard-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f9f9f9;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .dashboard-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .book-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    .book-table th, .book-table td {
+        padding: 8px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+    }
+
+    .book-table th {
+        background-color: #f3f3f3;
+    }
+
+    .book-table td {
+        vertical-align: top;
+    }
+
+    .statistics {
+        margin-top: 20px;
+    }
+</style>
+
+<div class="dashboard-container">
+    <h2 class="dashboard-header">Seller Dashboard</h2>
+
+    <h3>Add New Book</h3>
+    <form method="get" action="{% url 'add_book' %}">
+        <button type="submit" class="btn btn-primary">Add New Book</button>
+    </form>
+
+    <h3>My Books</h3>
+    <table class="book-table">
+        <tr>
+            <th>Book Name</th>
+            <th>Price</th>
+            <th>Purchases</th>
+        </tr>
+        {% for book in seller_books %}
+        <tr>
+            <td>{{ book.name }}</td>
+            <td>${{ book.price }}</td>
+            <td>{{ book_purchases.book }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <div class="statistics">
+        <h3>Statistics</h3>
+        <p>Total Listings: {{ total_listings }}</p>
+    </div>
+</div>
+{% endblock %}

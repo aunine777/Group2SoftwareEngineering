@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Book Inventory</title>
+    <!-- Add any additional stylesheet links here -->
+</head>
+<body>
+    <h1>Book Inventory</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>ISBN</th>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Genre</th>
+                <th>Pages</th>
+                <th>Release Date</th>
+                <th>Stock</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for book in books %}
+                <tr>
+                    <td>{{ book.isbn }}</td>
+                    <td>{{ book.title }}</td>
+                    <td>{{ book.author }}</td>
+                    <td>{{ book.genre }}</td>
+                    <td>{{ book.pages }}</td>
+                    <td>{{ book.release_date }}</td>
+                    <td>{{ book.stock }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="7">No books found in inventory.</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <!-- You can add more page content here -->
+</body>
+</html>
