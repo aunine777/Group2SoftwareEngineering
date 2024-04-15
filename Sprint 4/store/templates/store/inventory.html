@@ -1,0 +1,213 @@
+{% extends 'store/main.html' %}
+{% load static %}
+{% block content %}
+<style>
+    /* Additional custom styles for the inventory page */
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-around;
+        margin-top: 20px;
+    }
+
+    .col-lg-4 {
+        flex: 0 0 calc(33.3333% - 20px);
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: center;
+    }
+
+    .thumbnail {
+        width: 100%;
+        height: auto;
+        border-radius: 5px;
+    }
+
+    .box-element {
+        padding: 20px;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .box-element:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-5px);
+    }
+
+    .product h6 {
+        margin-top: 0;
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .product hr {
+        margin: 10px 0;
+        border: none;
+        border-top: 1px solid #ddd;
+    }
+
+    .product .btn {
+        margin-top: 10px;
+        width: 48%;
+        display: inline-block;
+    }
+
+    .product .btn-outline-secondary {
+        color: #333;
+        border-color: #333;
+    }
+
+    .product .btn-outline-secondary:hover {
+        background-color: #333;
+        color: #fff;
+    }
+
+    .product .btn-outline-success {
+        color: #28a745;
+        border-color: #28a745;
+    }
+
+    .product .btn-outline-success:hover {
+        background-color: #28a745;
+        color: #fff;
+    }
+
+    .product h4 {
+        margin-top: 10px;
+        font-size: 24px;
+        font-weight: bold;
+        color: #333;
+    }
+
+    .product button,
+    .product a {
+        margin: 5px;
+    }
+
+    .product a.btn-outline-success {
+        width: 48%;
+        text-decoration: none;
+    }
+
+    .product h6[data-tooltip]:hover::after {
+        content: attr(data-tooltip);
+        display: block;
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #333;
+        color: #fff;
+        padding: 5px;
+        border-radius: 5px;
+        white-space: nowrap;
+        z-index: 10;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .col-lg-4 {
+            flex: 0 0 calc(50% - 20px);
+        }
+    }
+
+    @media (max-width: 576px) {
+        .col-lg-4 {
+            flex: 0 0 100%;
+            margin-bottom: 15px;
+        }
+    }
+</style>
+
+
+<div class="container">
+    <h1 class="my-4">Inventory</h1>
+    <div class="row">
+        {% for product in products %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100">
+                    <a href="{% url 'book_detail' product.id %}">
+                        <img class="card-img-top" src="{{ product.imageURL }}" alt="{{ product.name }}">
+                    </a>
+                    <div class="card-body d-flex flex-column">
+                        <h4 class="card-title">
+                            <a href="{% url 'book_detail' product.id %}">{{ product.name }}</a>
+                        </h4>
+                        <h5>${{ product.price }}</h5>
+                        <div class="mt-auto">
+                            <button data-product="{{ product.id }}" data-action="add" class="btn btn-primary add-btn update-cart">Add to Cart</button>
+                            <a href="{% url 'book_detail' product.id %}" class="btn btn-info">View</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12">
+                <p class="text-center">No books found in inventory.</p>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+
+<!-- Inline JavaScript -->
+<script type="text/javascript">
+    (function() {
+        // Function to handle adding items to cart
+        function addToCart(productId, action) {
+            console.log('User is authenticated, sending data...', 'Product ID:', productId, 'Action:', action);
+
+            var url = '/update_item/';
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({'productId': productId, 'action': action})
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('data:', data);
+                location.reload();
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        // Attaching event listeners to all update-cart buttons
+        function attachEventListeners() {
+            var updateBtns = document.getElementsByClassName('update-cart');
+            for (var i = 0; i < updateBtns.length; i++) {
+                updateBtns[i].addEventListener('click', function() {
+                    var productId = this.dataset.product;
+                    var action = this.dataset.action;
+                    console.log('Button clicked - Product ID:', productId, 'Action:', action);
+
+                    if ('{{ request.user }}' === 'AnonymousUser') {
+                        alert('You must be logged in to add items to the cart.');
+                        window.location.href = '/login/';
+                    } else {
+                        addToCart(productId, action);
+                    }
+                });
+            }
+        }
+
+        // Ensuring event listeners are attached only once
+        if (!window.cartListenersInitialized) {
+            attachEventListeners();
+            window.cartListenersInitialized = true;
+        }
+    })();
+</script>
+
+
+{% endblock content %}

@@ -1,0 +1,83 @@
+{% extends 'store/main.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <!-- Checkout form -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="m-0">Checkout</h4>
+                </div>
+                <div class="card-body">
+                    <form id="checkout-form" method="post" action="{% url 'checkout' %}">
+                        {% csrf_token %}
+                        <!-- Name and Email fields pre-filled if user is logged in and has previous data -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name</label>
+                            <input class="form-control" type="text" id="name" name="name" value="{{ request.user.get_full_name }}" required placeholder="Enter your full name">
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input class="form-control" type="email" id="email" name="email" value="{{ request.user.email }}" required placeholder="Enter your email address">
+                        </div>
+                        <!-- Pre-filled address information if available -->
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address</label>
+                            <input class="form-control" type="text" id="address" name="address" value="{{ address.address }}" required placeholder="1234 Main St">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="city" class="form-label">City</label>
+                                <input class="form-control" type="text" id="city" name="city" value="{{ address.city }}" required placeholder="Enter your city">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="state" class="form-label">State</label>
+                                <input class="form-control" type="text" id="state" name="state" value="{{ address.state }}" required placeholder="Enter your state">
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <label for="zipcode" class="form-label">Zip</label>
+                                <input class="form-control" type="text" id="zipcode" name="zipcode" value="{{ address.zipcode }}" required placeholder="Enter your zip code">
+                            </div>
+                        </div>
+                        <!-- Additional field for country, also pre-filled -->
+                        <div class="mb-3">
+                            <label for="country" class="form-label">Country</label>
+                            <input class="form-control" type="text" id="country" name="country" value="{{ address.country }}" required placeholder="Enter your country">
+                        </div>
+                        <!-- Submit button -->
+                        <button type="submit" class="btn btn-primary btn-lg btn-block">Continue to Payment</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Order summary -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow">
+                <div class="card-header bg-success text-white">
+                    <h4 class="m-0">Order Summary</h4>
+                </div>
+                <div class="card-body">
+                    {% for item in items %}
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <img src="{{ item.product.imageURL }}" alt="{{ item.product.name }}" class="img-thumbnail" style="width: 50px; height: 50px;">
+                        <div class="ml-3">
+                            <strong>{{ item.product.name }}</strong>
+                            <div>${{ item.product.price|floatformat:2 }} (Quantity: {{ item.quantity }})</div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-muted">No products in cart.</p>
+                    {% endfor %}
+                    <hr>
+                    <h5 class="text-secondary">Total: <span class="text-success">${{ order.get_cart_total|floatformat:2 }}</span></h5>
+                </div>
+            </div>
+            <div class="text-center mt-3">
+                <a class="btn btn-outline-dark" href="{% url 'cart' %}">&#x2190; Back to Cart</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

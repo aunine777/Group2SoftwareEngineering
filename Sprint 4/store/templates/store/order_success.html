@@ -1,0 +1,44 @@
+{% extends 'store/main.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card border-0 shadow">
+        <div class="card-body">
+            <h4 class="card-title text-center text-success mb-4">Thank you for your order!</h4>
+            <p class="text-center">Your order has been placed successfully and is now being processed. You will receive an email confirmation shortly with the details of your order and a link to track its progress.</p>
+            
+            {% if order %}
+            <div class="border-top pt-4 mt-4">
+                <h5 class="text-secondary">Order Details:</h5>
+                <ul class="list-unstyled">
+                    <li>Order Number: <strong>{{ order.id }}</strong></li>
+                    <li>Date: <strong>{{ order.date_ordered }}</strong></li>
+                    <li>Total: <strong class="text-success">${{ order.get_cart_total|floatformat:2 }}</strong></li>
+                </ul>
+                <h6 class="mt-4">Items Ordered:</h6>
+                {% for item in items %}
+                <div class="d-flex align-items-center mb-3">
+                    <img src="{{ item.product.imageURL }}" alt="{{ item.product.name }}" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover; margin-right: 20px;">
+                    <div>
+                        <div><strong>{{ item.product.name }}</strong></div>
+                        <div>${{ item.product.price|floatformat:2 }} <small class="text-muted">x {{ item.quantity }}</small></div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted">No items found in this order.</p>
+                {% endfor %}
+            </div>
+            <div class="mt-4 d-flex justify-content-between">
+                <a href="{% url 'view_inventory' %}" class="btn btn-outline-primary">Continue Shopping</a>
+                <a href="{% url 'cart' %}" class="btn btn-outline-secondary">View Cart</a>
+            </div>
+            {% else %}
+            <div class="alert alert-warning" role="alert">
+                <p>No order information is available. It seems there was an issue with your transaction.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
