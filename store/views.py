@@ -1,5 +1,5 @@
 from itertools import product
-from django.db.models import Count, Sum
+from django.db.models import Count, Sum, Avg
 from django.contrib.auth import login
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
@@ -55,11 +55,12 @@ def cart(request):
     order = data['order']
     items = data['items']
 
+
     # Prepare the context for rendering the cart template
     context = {
         'items': items,
         'order': order,
-        'cartItems': cartItems
+        'cartItems': cartItems,
     }
 
     # Render and return the cart template with the context data
@@ -346,17 +347,34 @@ def book_detail(request, id):
     return render(request, 'store/book_detail.html', {'book': product})
 
 def submit_rating(request, book_id):
+    if not request.user.is_authenticated:
+        # Redirect the user to login page
+        messages.error(request, "You must be logged in to rate books.")
+        return redirect('login')
+
     if request.method == 'POST':
         rating = int(request.POST.get('rating'))
         book = get_object_or_404(Product, id=book_id)
-        total_rating = book.average_rating * book.ratings_count
-        total_rating += rating
-        book.ratings_count += 1
-        book.average_rating = total_rating / book.ratings_count
+        rating, created = Rating.objects.update_or_create(
+            user_id=request.user.id, 
+            book=book, 
+            defaults={'score': rating}
+        )
+
+        # calculate the average rating and count of unique user reviews
+        aggregate_data = Rating.objects.filter(book=book).aggregate(
+            new_average=Avg('score'), 
+            ratings_count=Count('id', distinct=True)
+        )
+
+        # Update the book's average rating and count of ratings
+        book.average_rating = round(aggregate_data['new_average'], 1)
+        book.ratings_count = aggregate_data['ratings_count']
         book.save()
+
         return redirect('book_detail', id=book_id)
     else:
-        return redirect('error')
+        return redirect('book_detail', id=book_id)
 
 @csrf_exempt
 def processOrder(request):
@@ -392,3 +410,47 @@ def processOrder(request):
                     zipcode=data['shipping']['zipcode'],
                )
      return JsonResponse('Payment complete', safe=False)
+
+
+def order_history(request):
+    customer = Customer.objects.get(user=request.user)
+    orders = Order.objects.filter(customer=customer, complete=True).order_by('-date_ordered')
+    return render(request, 'store/order_history.html', {'orders': orders})
+
+@login_required
+@require_POST
+def return_order_item(request):
+    item_id = request.POST.get('item_id')
+    try:
+        order_item = get_object_or_404(OrderItem, id=item_id, order__customer=request.user.customer)
+
+        
+        # Check if the item has not already been returned
+        if order_item.returned:
+            messages.error(request, "This item has already been returned.")
+            return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+        
+        order_item.returned = True
+        order_item.save()
+
+        # Reenlist the product logic (if necessary)
+        # Assuming 'reenlisted' is a field on the product, otherwise update as needed.
+        product = order_item.product
+        product.reenlisted = True
+        product.save()
+
+        # Notify the seller logic
+        Notification.objects.create(
+            recipient=order_item.order.seller, 
+            message=f'{request.user.username} has returned {order_item.product.name}'
+        )
+
+        messages.success(request, "Item return processed successfully.")
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+
+    except OrderItem.DoesNotExist:
+        messages.error(request, "Item not found.")
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))
+    except Exception as e:
+        messages.error(request, f"An error occurred: {str(e)}")
+        return HttpResponseRedirect(request.META.get('HTTP_REFERER', '/'))

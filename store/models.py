@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 User = get_user_model()
 
@@ -32,6 +33,7 @@ class Product(models.Model):
     seller = models.ForeignKey(Profile, on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
     average_rating = models.FloatField(default=0.0, blank=True)
     ratings_count = models.IntegerField(default=0, blank=True)
+    reenlisted = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -47,6 +49,7 @@ class Order(models.Model):
     date_ordered = models.DateTimeField(auto_now_add=True)
     complete = models.BooleanField(default=False)
     transaction_id = models.CharField(max_length=200, null=True, blank=True)
+    delivered = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Order {self.id}"
@@ -66,10 +69,19 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, related_name='order_items')
-    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, related_name='order_items')
+    product = models.ForeignKey('Product', on_delete=models.SET_NULL, null=True, related_name='order_items')
+    order = models.ForeignKey('Order', on_delete=models.SET_NULL, null=True, related_name='order_items')
     quantity = models.IntegerField(default=0)
-    status = models.CharField(max_length=100, default='pending') 
+    status = models.CharField(max_length=100, default='pending', choices=[
+        ('pending', 'Pending'),
+        ('shipped', 'Shipped'),
+        ('delivered', 'Delivered'),
+        ('returned', 'Returned')
+    ])
+    returned = models.BooleanField(default=False)
+    
+    class Meta:
+        unique_together = ('product', 'order', 'status')
 
     def __str__(self):
         return f"{self.quantity} of {self.product.name if self.product else 'Unknown Product'}"
@@ -78,12 +90,24 @@ class OrderItem(models.Model):
     def get_total(self):
         return self.product.price * self.quantity if self.product else 0
 
-    class Meta:
-        unique_together = ('product', 'order', 'status')  
-
     @property
     def is_active(self):
-        return self.status == 'active'
+        """Determines if the order item is considered active, i.e., not returned."""
+        return self.status in ['pending', 'shipped', 'delivered'] and not self.returned
+
+    def mark_as_returned(self):
+        """Marks the order item as returned and updates inventory if necessary."""
+        if not self.returned:
+            self.returned = True
+            self.status = 'returned'
+            self.save()
+            self.product.increment_inventory(self.quantity)  # Assuming a method on Product model that increments inventory.
+
+    def save(self, *args, **kwargs):
+        """Custom save method to handle business logic before saving."""
+        if self.returned and self.status != 'returned':
+            self.status = 'returned'
+        super().save(*args, **kwargs)
 
 
 class ShippingAddress(models.Model):
@@ -103,11 +127,53 @@ class Notification(models.Model):
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
     message = models.CharField(max_length=255)
     read = models.BooleanField(default=False)
+    type = models.CharField(max_length=50, default='info')  # Type of notification
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Notification for {self.recipient.username}"
+        read_status = "Read" if self.read else "Unread"
+        return f"{self.recipient.username} - {self.message} ({read_status})"
 
+    def mark_as_read(self):
+        """Mark the notification as read."""
+        self.read = True
+        self.save()
+
+    class Meta:
+        ordering = ['-created_at']  # Newest notifications first
+
+
+class Rating(models.Model):
+    SCORE_CHOICES = (
+        (1, 'Poor'),
+        (2, 'Fair'),
+        (3, 'Good'),
+        (4, 'Very Good'),
+        (5, 'Excellent'),
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='ratings',
+        db_index=True
+    )
+    book = models.ForeignKey(
+        'Product',  # Assume Product is the book model
+        on_delete=models.CASCADE,
+        related_name='ratings',
+        db_index=True
+    )
+    score = models.IntegerField(
+        default=1,
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        choices=SCORE_CHOICES
+    )
+
+    class Meta:
+        unique_together = ('user', 'book')
+
+    def __str__(self):
+        return f"{self.user.username} rated {self.book.title} as {self.score}"
 
 
 # class Book(models.Model):

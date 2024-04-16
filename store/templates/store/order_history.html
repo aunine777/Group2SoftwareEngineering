@@ -1,0 +1,116 @@
+{% extends 'store/main.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Order History</h2>
+    <style>
+        .order {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+        .order-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        .order-item img {
+            width: 100px;
+            height: auto;
+            margin-right: 15px;
+        }
+        .btn-warning {
+            color: #fff;
+            background-color: #f0ad4e;
+            border-color: #eea236;
+        }
+    </style>
+    {% for order in orders %}
+    <div class="order">
+        <h4>Order placed on {{ order.date_ordered|date:"F d, Y" }}</h4>
+        {% for item in order.order_items.all %}
+        <div class="order-item">
+            <img src="{{ item.product.imageURL }}" alt="{{ item.product.name }}">
+            <div>
+                <p>{{ item.product.name }}</p>
+                <p>${{ item.product.price }}</p>
+            </div>
+            {% if not item.returned %}
+            <button type="button" class="btn btn-warning" data-toggle="modal" data-target="#returnModal{{ item.id }}">
+                Return Item
+            </button>
+            <!-- Modal -->
+            <div class="modal fade" id="returnModal{{ item.id }}" tabindex="-1" role="dialog" aria-labelledby="returnModalLabel{{ item.id }}" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="returnModalLabel{{ item.id }}">Confirm Return</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            Are you sure you want to return this item?
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">No</button>
+                            <button type="button" class="btn btn-primary" onclick="returnItem({{ item.id }})">Yes</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    {% empty %}
+    <p>You have no past orders.</p>
+    {% endfor %}
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function returnItem(itemId) {
+    const csrfToken = getCookie('csrftoken');
+    console.log("Attempting to return item with ID:", itemId); // Debugging output
+    $.ajax({
+        url: `/return-order-item/${itemId}/`, // Make sure this URL is correct
+        type: 'POST',
+        headers: {'X-CSRFToken': csrfToken},
+        data: {
+            'item_id': itemId
+        },
+        success: function(response) {
+            console.log("Return processed successfully.", response); // Debugging output
+            alert('Return processed successfully.');
+            window.location.reload();  // Reload the page to update the UI
+        },
+        error: function(xhr, errmsg, err) {
+            console.error("AJAX error in request: ", errmsg, err); // Debugging output
+            alert('Could not process the return. Please try again.');
+        }
+    });
+}
+</script>
+{% endblock %}
