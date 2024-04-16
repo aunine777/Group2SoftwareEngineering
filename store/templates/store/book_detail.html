@@ -22,17 +22,13 @@
       margin-top: 1rem;
     }
 
-    .book-title, .book-author, .book-pages, .book-description, .book-rating {
+    .book-title, .book-author, .book-pages, .book-description, .book-rating, .rating-form {
       margin-bottom: 1rem;
     }
 
     .book-description {
       font-size: 1rem; 
       line-height: 1.6; 
-    }
-
-    .rating-form {
-      margin-top: 1rem;
     }
 
     @media (min-width: 768px) {
@@ -52,6 +48,7 @@
     }
   </style>
 
+<div class="container">
   <div class="book-detail-container">
     <div class="book-cover">
       {% if book.image %}
@@ -69,19 +66,32 @@
       <div class="book-rating">
         <h3>Rating: {{ book.average_rating|default:"No ratings yet" }} ({{ book.ratings_count }} reviews)</h3>
       </div>
+      
+      <!-- Display comments -->
+      <div class="book-comments">
+        <h4>Comments:</h4>
+        {% for rating in book.ratings.all %}
+        <p><strong>{{ rating.user.username }}:</strong> {{ rating.comment }}</p>
+        {% empty %}
+        <p>No comments yet.</p>
+        {% endfor %}
+      </div>
 
-      <!-- Rating form -->
+      <!-- Rating and comment form -->
       <form method="post" action="{% url 'submit_rating' book_id=book.id %}">
         {% csrf_token %}
-        <label for="rating">Rate this book:</label>
-        <select name="rating" id="rating">
-          <option value="1">1 - Poor</option>
-          <option value="2">2 - Fair</option>
-          <option value="3">3 - Good</option>
-          <option value="4">4 - Very Good</option>
-          <option value="5">5 - Excellent</option>
-        </select>
-        <input type="submit" value="Submit Rating">
+        <div class="rating-form">
+          <label for="rating">Rate this book:</label>
+          <select name="rating" id="rating">
+            <option value="1">1 - Poor</option>
+            <option value="2">2 - Fair</option>
+            <option value="3">3 - Good</option>
+            <option value="4">4 - Very Good</option>
+            <option value="5">5 - Excellent</option>
+          </select>
+          <textarea name="comment" placeholder="Add a comment"></textarea>
+          <input type="submit" value="Submit Rating">
+        </div>
       </form>
     </div>
   </div>

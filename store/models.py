@@ -158,7 +158,7 @@ class Rating(models.Model):
         db_index=True
     )
     book = models.ForeignKey(
-        'Product',  # Assume Product is the book model
+        'Product',
         on_delete=models.CASCADE,
         related_name='ratings',
         db_index=True
@@ -168,6 +168,7 @@ class Rating(models.Model):
         validators=[MinValueValidator(1), MaxValueValidator(5)],
         choices=SCORE_CHOICES
     )
+    comment = models.TextField(blank=True, null=True)  # Allows for optional comments
 
     class Meta:
         unique_together = ('user', 'book')

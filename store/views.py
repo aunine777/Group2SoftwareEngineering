@@ -29,6 +29,7 @@ import json
 from django.contrib import messages
 from django.db.models import DecimalField
 from .forms import CheckoutForm
+from django.utils.html import escape
 
 
 
@@ -348,33 +349,46 @@ def book_detail(request, id):
 
 def submit_rating(request, book_id):
     if not request.user.is_authenticated:
-        # Redirect the user to login page
         messages.error(request, "You must be logged in to rate books.")
         return redirect('login')
 
     if request.method == 'POST':
-        rating = int(request.POST.get('rating'))
-        book = get_object_or_404(Product, id=book_id)
-        rating, created = Rating.objects.update_or_create(
-            user_id=request.user.id, 
-            book=book, 
-            defaults={'score': rating}
-        )
+        try:
+            rating = int(request.POST.get('rating'))
+            if rating < 1 or rating > 5:
+                raise ValueError("Rating must be between 1 and 5.")
+            comment = escape(request.POST.get('comment', ''))  # Escape to prevent XSS attacks
+            book = get_object_or_404(Product, id=book_id)
+            
+            # Create or update the rating and comment
+            rating_obj, created = Rating.objects.update_or_create(
+                user=request.user, 
+                book=book, 
+                defaults={'score': rating, 'comment': comment}
+            )
 
-        # calculate the average rating and count of unique user reviews
-        aggregate_data = Rating.objects.filter(book=book).aggregate(
-            new_average=Avg('score'), 
-            ratings_count=Count('id', distinct=True)
-        )
+            # Recalculate the average rating and count of unique user reviews
+            aggregate_data = Rating.objects.filter(book=book).aggregate(
+                new_average=Avg('score'), 
+                ratings_count=Count('id', distinct=True)
+            )
 
-        # Update the book's average rating and count of ratings
-        book.average_rating = round(aggregate_data['new_average'], 1)
-        book.ratings_count = aggregate_data['ratings_count']
-        book.save()
+            # Update the book's average rating and count of ratings
+            book.average_rating = round(aggregate_data['new_average'], 1)
+            book.ratings_count = aggregate_data['ratings_count']
+            book.save()
 
-        return redirect('book_detail', id=book_id)
+            messages.success(request, "Thank you for your rating and comment.")
+            return redirect('book_detail', id=book_id)
+
+        except ValueError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, "An error occurred while submitting your rating. Please try again.")
     else:
-        return redirect('book_detail', id=book_id)
+        messages.warning(request, "Invalid request method.")
+    
+    return redirect('book_detail', id=book_id)
 
 @csrf_exempt
 def processOrder(request):
