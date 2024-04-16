@@ -1,0 +1,194 @@
+{% extends 'store/main.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    /* General Styles */
+    .dashboard-container {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        font-family: 'Arial', sans-serif;
+    }
+
+    h1, h2 {
+        color: #333;
+    }
+
+    /* Buttons and Links */
+    .btn {
+        padding: 10px 20px;
+        border-radius: 5px;
+        text-transform: uppercase;
+        font-weight: bold;
+        cursor: pointer;
+        text-align: center;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+        border: none;
+    }
+
+    .btn-danger {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+    }
+
+    /* Table Styles */
+    .book-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    .book-table th, .book-table td {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+    }
+
+    .book-table th {
+        background-color: #f8f9fa;
+    }
+
+    .book-table td {
+        vertical-align: middle;
+    }
+
+    /* Notifications */
+    .notification {
+        background-color: #f0f4f8;
+        border-left: 4px solid #007bff;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+    }
+
+    /* Section Spacing */
+    section {
+        margin-bottom: 30px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .dashboard-container {
+            padding: 10px;
+        }
+    }
+</style>
+
+<div class="dashboard-container">
+    <h1>Seller Dashboard</h1>
+    
+    <!-- Notifications Section -->
+    <section id="notifications">
+        <h2>Notifications</h2>
+        <div id="notification-list">
+            {% for notification in notifications %}
+            <div class="notification" id="notification-{{ notification.id }}">
+                {{ notification.message }}
+                <button type="button" class="btn-clear" onclick="clearNotification({{ notification.id }});">Clear</button>
+            </div>
+            {% empty %}
+            <p>No new notifications.</p>
+            {% endfor %}
+        </div>
+    </section>
+    
+    <!-- Add new book form -->
+    <section>
+        <h2>Add New Book</h2>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ add_book_form.as_p }}
+            <button type="submit" class="btn btn-primary">Add Book</button>
+        </form>
+    </section>
+    
+    <!-- Book sales data -->
+    <section>
+        <h2>My Books</h2>
+        <table class="book-table">
+            <thead>
+                <tr>
+                    <th>Book Name</th>
+                    <th>Price</th>
+                    <th>Total Sales</th>
+                    <th>Total Revenue</th>
+                    <th>Orders Count</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for book in book_sales_data %}
+                <tr>
+                    <td>{{ book.name }}</td>
+                    <td>${{ book.price|floatformat:2 }}</td>
+                    <td>{{ book.total_sales }}</td>
+                    <td>${{ book.total_revenue|floatformat:2 }}</td>
+                    <td>{{ book.order_count }}</td>
+                    <td>
+                        <a href="{% url 'remove_listing' book.id %}" class="btn btn-danger">Remove</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6">No books found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <p>Total Listings: {{ total_listings }}</p>
+    </section>
+</div>
+
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    function clearNotification(notificationId) {
+        console.log('Clear notification:', notificationId);
+        fetch(`/clear_notification/${notificationId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'), // Assuming you're using CSRF token
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 'notification_id': notificationId })
+        })
+        .then(response => {
+            if (response.ok) {
+                // Remove the notification element from the DOM
+                var notificationElement = document.getElementById('notification-' + notificationId);
+                if (notificationElement) {
+                    notificationElement.remove();
+                }
+            } else {
+                throw new Error('Server responded with status ' + response.status);
+            }
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+</script>
+{% endblock %}

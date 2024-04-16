@@ -1,0 +1,151 @@
+{% extends 'store/main.html' %}
+{% load static %}
+{% block content %}
+    <style>
+        /* Custom styles for the store page */
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .col-lg-4 {
+            flex: 0 0 calc(33.3333% - 20px);
+            margin-bottom: 20px;
+        }
+
+        .thumbnail {
+            width: 100%;
+            height: auto;
+        }
+
+        .box-element {
+            padding: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .box-element:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .product h6 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+
+        .product hr {
+            margin: 10px 0;
+            border: none;
+            border-top: 1px solid #ddd;
+        }
+
+        .product .btn {
+            margin-top: 10px;
+        }
+
+        .product .btn-outline-secondary {
+            color: #333;
+            border-color: #333;
+        }
+
+        .product .btn-outline-secondary:hover {
+            background-color: #333;
+            color: #fff;
+        }
+
+        .product .btn-outline-success {
+            color: #28a745;
+            border-color: #28a745;
+        }
+
+        .product .btn-outline-success:hover {
+            background-color: #28a745;
+            color: #fff;
+        }
+
+        .product h4 {
+            margin-top: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+
+    <div class="row">
+        {% for product in products %}
+            <div class="col-lg-4">
+                <img class="thumbnail" src="{{product.imageURL}}">
+                <div class="box-element product">
+                    <h6><strong>{{product.name}}</strong></h6>
+                    <hr>
+                    <div class="mt-auto">
+                        <button data-product="{{ product.id }}" data-action="add" class="btn btn-primary add-btn update-cart">Add to Cart</button>
+                        <a href="{% url 'book_detail' product.id %}" class="btn btn-info">View</a>
+                    </div>
+                    <h4>${{product.price|floatformat:2}}</h4>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+
+
+<!-- Inline JavaScript -->
+<script type="text/javascript">
+    (function() {
+        // Function to handle adding items to cart
+        function addToCart(productId, action) {
+            console.log('User is authenticated, sending data...', 'Product ID:', productId, 'Action:', action);
+
+            var url = '/update_item/';
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({'productId': productId, 'action': action})
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('data:', data);
+                location.reload();
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        // Attaching event listeners to all update-cart buttons
+        function attachEventListeners() {
+            var updateBtns = document.getElementsByClassName('update-cart');
+            for (var i = 0; i < updateBtns.length; i++) {
+                updateBtns[i].addEventListener('click', function() {
+                    var productId = this.dataset.product;
+                    var action = this.dataset.action;
+                    console.log('Button clicked - Product ID:', productId, 'Action:', action);
+
+                    if ('{{ request.user }}' === 'AnonymousUser') {
+                        alert('You must be logged in to add items to the cart.');
+                        window.location.href = '/login/';
+                    } else {
+                        addToCart(productId, action);
+                    }
+                });
+            }
+        }
+
+        // Ensuring event listeners are attached only once
+        if (!window.cartListenersInitialized) {
+            attachEventListeners();
+            window.cartListenersInitialized = true;
+        }
+    })();
+</script>
+
+{% endblock content %}

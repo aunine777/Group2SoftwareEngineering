@@ -1,0 +1,57 @@
+{% extends 'store/base.html' %}
+
+{% block content %}
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="text-content">
+            <h1 class="text-center">Welcome to StarkVegas Select</h1>
+            <p class="tagline text-center">Your one-stop shop for the best books in town.</p>
+            <!-- Hero Image or Carousel -->
+            <div id="bookCarousel" class="carousel slide" data-ride="carousel">
+                <!-- Carousel content -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Books -->
+    <section class="featured-books">
+        <div class="container">
+            <h2>Featured Books</h2>
+            <div class="row">
+                <!-- Dynamically load featured books here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- New Arrivals -->
+    <section class="new-arrivals">
+        <div class="container">
+            <h2>New Arrivals</h2>
+            <div class="row">
+                <!-- Dynamically load new arrivals here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Bestsellers -->
+    <section class="bestsellers">
+        <div class="container">
+            <h2>Bestsellers</h2>
+            <div class="row">
+                <!-- Dynamically load bestsellers here -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter Signup -->
+    <section class="newsletter-signup">
+        <div class="container">
+            <h2>Stay in the Know</h2>
+            <p>Sign up for our newsletter to receive updates on new releases and special offers.</p>
+            <form>
+                <input type="email" placeholder="Enter your email">
+                <button type="submit">Subscribe</button>
+            </form>
+        </div>
+    </section>
+{% endblock %}

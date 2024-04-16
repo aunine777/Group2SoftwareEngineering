@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Welcome, {{ request.user.username }}!</h1>
+    <h2>Your Inventory</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Genre</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for book in inventory %}
+            <tr>
+                <td>{{ book.title }}</td>
+                <td>{{ book.author }}</td>
+                <td>{{ book.genre }}</td>
+                <td>{{ book.price }}</td>
+                <td>{{ book.stock }}</td>
+                <td>
+                    <!-- Links to edit and remove book -->
+                    <a href="{% url 'edit_book' book.isbn %}">Edit</a> |
+                    <a href="{% url 'remove_book' book.isbn %}">Remove</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Add a New Book</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ new_book_form.as_p }}
+        <button type="submit" class="btn btn-primary">Add Book</button>
+    </form>
+</div>
+{% endblock %}

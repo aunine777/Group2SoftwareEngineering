@@ -1,0 +1,130 @@
+{% extends 'store/main.html' %}
+{% block content %}
+    <style>
+        /* Custom styles for the search books page */
+        .search-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .search-header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 24px;
+        }
+
+        .search-form {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .search-form input[type="text"] {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            width: 60%;
+            margin-right: 10px;
+        }
+
+        .search-form input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .search-form input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        .products {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .product {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .product img {
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+
+        .product h3 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+
+        .product p {
+            font-size: 16px;
+            color: #007bff;
+        }
+
+        .product .btn {
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .product .btn:hover {
+            background-color: #98a6b6;
+        }
+
+        .no-results {
+            text-align: center;
+            margin-top: 20px;
+            color: #333;
+            font-size: 18px;
+        }
+    </style>
+
+    <div class="search-container">
+        <h2 class="search-header">Search for a Book</h2>
+        <form class="search-form" method="get" action="{% url 'search_books' %}">
+            <input type="text" name="query" value="{{ query }}" placeholder="Search by title">
+            <input type="submit" value="Search">
+        </form>
+
+        {% if products %}
+            <h3>Search Results for "{{ query }}":</h3>
+            <div class="products">
+                {% for product in products %}
+                    <div class="product">
+                        <img src="{{ product.imageURL }}" alt="{{ product.name }}">
+                        <h3>{{ product.name }}</h3>
+                        <p>${{ product.price }}</p>
+                        <div class="mt-auto">
+                            <button data-product="{{ product.id }}" data-action="add" class="btn btn-primary add-btn update-cart">Add to Cart</button>
+                            <a href="{% url 'book_detail' product.id %}" class="btn btn-info">View</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% elif query %}
+            <p class="no-results">No books found for "{{ query }}".</p>
+        {% else %}
+            <p class="no-results">Enter a search query above.</p>
+        {% endif %}
+    </div>
+{% endblock %}
