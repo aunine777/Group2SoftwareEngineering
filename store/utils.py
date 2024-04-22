@@ -4,7 +4,7 @@ from .models import *
 
 def cookieCart(request):
     try:
-        cart = json.loads(request.COOKIES['cart'])
+        cart = json.loads(request.COOKIES.get('cart', '{}'))  # Safe loading of cart
     except json.JSONDecodeError:
         cart = {}
         print('Cart is empty or invalid JSON.')
@@ -49,7 +49,7 @@ def cartData(request):
             order = Order.objects.create(customer=customer, complete=False)
 
         items = order.order_items.all()
-        cartItems = sum(item.quantity for item in items)  # Corrected part
+        cartItems = sum(item.quantity for item in items)
 
     else:
         cookieData = cookieCart(request)
